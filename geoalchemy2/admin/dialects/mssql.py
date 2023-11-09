@@ -114,7 +114,7 @@ def _compile_GeomFromText_MsSql(element, compiler, **kw):
     if srid > 0:
         return "{}({}, {})".format(element.identifier, compiled, srid)
     else:
-        return "{}({})".format(element.identifier, compiled)
+        return "{}({}, 4326)".format(element.identifier, compiled)
 
 
 def _compile_GeomFromWKB_MsSql(element, compiler, **kw):

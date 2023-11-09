@@ -38,6 +38,7 @@ def select_dialect(dialect_name):
     """Select the dialect from its name."""
     known_dialects = {
         "geopackage": dialects.geopackage,
+        "mssql": dialects.mssql,
         "mysql": dialects.mysql,
         "postgresql": dialects.postgresql,
         "sqlite": dialects.sqlite,

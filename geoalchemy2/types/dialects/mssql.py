@@ -1,4 +1,4 @@
-"""This module defines specific functions for MySQL dialect."""
+"""This module defines specific functions for MSSQL dialect."""
 from geoalchemy2.elements import WKBElement
 from geoalchemy2.elements import WKTElement
 from geoalchemy2.elements import _SpatialElement
@@ -42,6 +42,6 @@ def bind_processor_process(spatial_type, bindvalue):
         return bindvalue
     elif isinstance(bindvalue, WKBElement):
         if "wkb" not in spatial_type.from_text.lower():
-            # With MySQL we use Shapely to convert the WKBElement to an EWKT string
+            # With MSSQL we use Shapely to convert the WKBElement to an EWKT string
             return to_shape(bindvalue).wkt
         return bindvalue

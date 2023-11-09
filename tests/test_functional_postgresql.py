@@ -46,7 +46,7 @@ if SQLA_LT_2:
 
     get_inspector = Inspector.from_engine
 else:
-    from sqlalchemy import inspect as get_inspector
+    from sqlalchemy import inspect as get_inspector  # type: ignore
 
 
 class TestIndex:
@@ -105,7 +105,6 @@ class TestIndex:
                         dimension=3,
                         spatial_index=False,
                         use_N_D_index=True,
-                        management=False,
                     )
                 )
 
@@ -139,28 +138,24 @@ class TestIndex:
                 Geometry(
                     geometry_type="POINT",
                     spatial_index=False,
-                    management=False,
                 )
             )
             geom_not_managed_index = Column(
                 Geometry(
                     geometry_type="POINT",
                     spatial_index=True,
-                    management=False,
                 )
             )
             geom_managed_no_index = Column(
                 Geometry(
                     geometry_type="POINT",
                     spatial_index=False,
-                    management=True,
                 )
             )
             geom_managed_index = Column(
                 Geometry(
                     geometry_type="POINT",
                     spatial_index=True,
-                    management=True,
                 )
             )
             # Test indexes on Geometry columns with ND index.
@@ -170,7 +165,6 @@ class TestIndex:
                     dimension=3,
                     spatial_index=True,
                     use_N_D_index=True,
-                    management=False,
                 )
             )
             geom_managed_nd_index = Column(
@@ -179,7 +173,6 @@ class TestIndex:
                     dimension=3,
                     spatial_index=True,
                     use_N_D_index=True,
-                    management=True,
                 )
             )
             # Test indexes on Geography columns.
@@ -187,28 +180,24 @@ class TestIndex:
                 Geography(
                     geometry_type="POINT",
                     spatial_index=False,
-                    management=False,
                 )
             )
             geog_not_managed_index = Column(
                 Geography(
                     geometry_type="POINT",
                     spatial_index=True,
-                    management=False,
                 )
             )
             geog_managed_no_index = Column(
                 Geography(
                     geometry_type="POINT",
                     spatial_index=False,
-                    management=True,
                 )
             )
             geog_managed_index = Column(
                 Geography(
                     geometry_type="POINT",
                     spatial_index=True,
-                    management=True,
                 )
             )
             # Test indexes on Raster columns.
@@ -520,6 +509,65 @@ class TestCallFunction:
             "properties": {"dummy_attr": 10, "id": 1},
         }
 
+    @pytest.mark.parametrize(
+        "compared_element,expected_assert",
+        [
+            pytest.param("LINESTRING(0 1, 1 0)", True, id="intersecting raw string WKT"),
+            pytest.param("LINESTRING(99 99, 999 999)", False, id="not intersecting raw string WKT"),
+            pytest.param(WKTElement("LINESTRING(0 1, 1 0)"), True, id="intersecting WKTElement"),
+            pytest.param(
+                WKTElement("LINESTRING(99 99, 999 999)"), False, id="not intersecting WKTElement"
+            ),
+            pytest.param(
+                WKTElement("SRID=2154;LINESTRING(0 1, 1 0)"),
+                True,
+                id="intersecting extended WKTElement",
+            ),
+            pytest.param(
+                WKTElement("SRID=2154;LINESTRING(99 99, 999 999)"),
+                False,
+                id="not intersecting extended WKTElement",
+            ),
+            pytest.param(
+                WKBElement(
+                    "0102000000020000000000000000000000000000000000F03F000000000000F03F00000000000"
+                    "00000"
+                ),
+                True,
+                id="intersecting WKBElement",
+            ),
+            pytest.param(
+                WKBElement(
+                    "0102000000020000000000000000C058400000000000C058400000000000388F4000000000003"
+                    "88F40"
+                ),
+                False,
+                id="not intersecting WKBElement",
+            ),
+            pytest.param(
+                WKBElement(
+                    "01020000206A080000020000000000000000000000000000000000F03F000000000000F03F000"
+                    "0000000000000"
+                ),
+                True,
+                id="intersecting extended WKBElement",
+            ),
+            pytest.param(
+                WKBElement(
+                    "01020000206A080000020000000000000000C058400000000000C058400000000000388F40000"
+                    "0000000388F40"
+                ),
+                False,
+                id="not intersecting extended WKBElement",
+            ),
+        ],
+    )
+    def test_comparator(self, session, Lake, setup_one_lake, compared_element, expected_assert):
+        query = Lake.__table__.select().where(Lake.__table__.c.geom.intersects(compared_element))
+        res = session.execute(query).fetchall()
+
+        assert bool(res) == expected_assert
+
 
 class TestShapely:
     pass
@@ -528,7 +576,7 @@ class TestShapely:
 class TestSTAsGeoJson:
     InternalBase = declarative_base()
 
-    class TblWSpacesAndDots(InternalBase):
+    class TblWSpacesAndDots(InternalBase):  # type: ignore
         """
         Dummy class to test names with dots and spaces.
         No metadata is attached so the dialect is default SQL, not postgresql.

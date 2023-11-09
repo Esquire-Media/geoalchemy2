@@ -17,6 +17,7 @@ from geoalchemy2.types import Raster
 def select_dialect(dialect_name):
     """Select the dialect from its name."""
     known_dialects = {
+        "geopackage": dialects.geopackage,
         "mssql": dialects.mssql,
         "mysql": dialects.mysql,
         "postgresql": dialects.postgresql,
@@ -26,6 +27,8 @@ def select_dialect(dialect_name):
 
 
 def setup_ddl_event_listeners():
+    """Setup the DDL event listeners to automatically process spatial columns."""
+
     @event.listens_for(Table, "before_create")
     def before_create(table, bind, **kw):
         """Handle spatial indexes."""
@@ -64,9 +67,7 @@ def setup_ddl_event_listeners():
         ):
             raise ArgumentError("Arg Error(use_N_D_index): spatial_index must be True")
 
-        if getattr(column.type, "management", True) or not getattr(
-            column.type, "spatial_index", False
-        ):
+        if not getattr(column.type, "spatial_index", False):
             # If the column is managed, the indexes are created after the table
             return
 

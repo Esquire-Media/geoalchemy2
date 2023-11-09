@@ -1,9 +1,14 @@
 # -*- coding: utf-8 -*-
 # flake8: noqa
+from typing import List
+from typing import Optional
+from typing import Tuple
+from typing import Union
+
 from geoalchemy2 import types
 
 # fmt: off
-_FUNCTIONS = [
+_FUNCTIONS: List[Tuple[str, Optional[type], Union[None, str, Tuple[str, str]]]] = [
     ('AddGeometryColumn', None,
      '''Adds a geometry column to an existing table.'''),
     ('DropGeometryColumn', None,
@@ -247,7 +252,7 @@ _FUNCTIONS = [
     ('ST_AsText', None,
      '''Return the Well-Known Text (WKT) representation of the geometry/geography without SRID metadata.'''),
     ('ST_AsBinary', None,
-     '''[gometry] Return the Well-Known Binary (WKB) representation of the geometry/geography without SRID meta data.\nOR\n[raster] Return the Well-Known Binary (WKB) representation of the raster.'''),
+     '''[geometry] Return the Well-Known Binary (WKB) representation of the geometry/geography without SRID meta data.\nOR\n[raster] Return the Well-Known Binary (WKB) representation of the raster.'''),
     ('ST_AsEWKB', None,
      '''Return the Well-Known Binary (WKB) representation of the geometry with SRID meta data.'''),
     ('ST_AsHEXEWKB', None,
@@ -775,7 +780,7 @@ _FUNCTIONS = [
     ('ST_MapAlgebraExpr', types.Raster,
      ('''[raster] 1 raster band version: Creates a new one band raster formed by applying a valid PostgreSQL algebraic operation on the input raster band and of pixeltype provided. Band 1 is assumed if no band is specified.\nOR\n[raster] 2 raster band version: Creates a new one band raster formed by applying a valid PostgreSQL algebraic operation on the two input raster bands and of pixeltype provided. band 1 of each raster is assumed if no band numbers are specified. The resulting raster will be aligned (scale, skew and pixel corners) on the grid defined by the first raster and have its extent defined by the \"extenttype\" parameter. Values for \"extenttype\" can be: INTERSECTION, UNION, FIRST, SECOND.''', 'RT_ST_MapAlgebraExpr')),
     ('ST_MapAlgebraFct', types.Raster,
-     ('''[raster] 1 band version - Creates a new one band raster formed by applying a valid PostgreSQL function on the input raster band and of pixeltype prodived. Band 1 is assumed if no band is specified.\nOR\n[raster] 2 band version - Creates a new one band raster formed by applying a valid PostgreSQL function on the 2 input raster bands and of pixeltype prodived. Band 1 is assumed if no band is specified. Extent type defaults to INTERSECTION if not specified.''', 'RT_ST_MapAlgebraFct')),
+     ('''[raster] 1 band version - Creates a new one band raster formed by applying a valid PostgreSQL function on the input raster band and of pixeltype provided. Band 1 is assumed if no band is specified.\nOR\n[raster] 2 band version - Creates a new one band raster formed by applying a valid PostgreSQL function on the 2 input raster bands and of pixeltype provided. Band 1 is assumed if no band is specified. Extent type defaults to INTERSECTION if not specified.''', 'RT_ST_MapAlgebraFct')),
     ('ST_MapAlgebraFctNgb', types.Raster,
      ('''1-band version: Map Algebra Nearest Neighbor using user-defined PostgreSQL function. Return a raster which values are the result of a PLPGSQL user function involving a neighborhood of values from the input raster band.''', 'RT_ST_MapAlgebraFctNgb')),
     ('ST_Reclass', types.Raster,

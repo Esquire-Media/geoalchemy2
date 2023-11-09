@@ -35,7 +35,7 @@ metadata = MetaData()
 Base = declarative_base(metadata=metadata)
 
 
-class Ocean(Base):
+class Ocean(Base):  # type: ignore
     __tablename__ = "ocean"
     id = Column(Integer, primary_key=True)
     rast = Column(Raster)
@@ -94,6 +94,9 @@ def write_wkb_raster(dataset):
     srid = int(dataset.crs.to_string().split("EPSG:")[1])
     width = int(dataset.meta.get("width"))
     height = int(dataset.meta.get("height"))
+
+    if width > 65535 or height > 65535:
+        raise ValueError("PostGIS does not support rasters with width or height greater than 65535")
 
     fmt = f"{endian}{format_string}"
 

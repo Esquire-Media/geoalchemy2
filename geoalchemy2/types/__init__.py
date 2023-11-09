@@ -5,6 +5,9 @@ The :class:`geoalchemy2.types.Geometry`, :class:`geoalchemy2.types.Geography`, a
 columns/properties in models.
 """
 import warnings
+from typing import Any
+from typing import Dict
+from typing import Optional
 
 from sqlalchemy.dialects import postgresql
 from sqlalchemy.dialects.postgresql.base import ischema_names as _postgresql_ischema_names
@@ -14,6 +17,13 @@ from sqlalchemy.sql import func
 from sqlalchemy.types import Float
 from sqlalchemy.types import Integer
 from sqlalchemy.types import UserDefinedType
+
+try:
+    # SQLAlchemy >= 2
+    from sqlalchemy.sql._typing import _TypeEngineArgument
+except ImportError:
+    # SQLAlchemy < 2
+    _TypeEngineArgument = Any  # type: ignore
 
 from geoalchemy2.comparator import BaseComparator
 from geoalchemy2.comparator import Comparator
@@ -27,6 +37,7 @@ from geoalchemy2.types import dialects
 def select_dialect(dialect_name):
     """Select the dialect from its name."""
     known_dialects = {
+        "geopackage": dialects.geopackage,
         "mssql": dialects.mssql,
         "mysql": dialects.mysql,
         "postgresql": dialects.postgresql,
@@ -68,56 +79,33 @@ class _GISType(UserDefinedType):
            :class:`geoalchemy2.types.Geography`.
 
            When set to ``None`` then no "geometry type" constraints will be
-           attached to the geometry type declaration. Using ``None`` here
-           is not compatible with setting ``management`` to ``True``.
+           attached to the geometry type declaration.
 
            Default is ``"GEOMETRY"``.
 
         srid: The SRID for this column. E.g. 4326. Default is ``-1``.
         dimension: The dimension of the geometry. Default is ``2``.
-
-            With ``management`` set to ``True``, that is when ``AddGeometryColumn`` is used
-            to add the geometry column, there are two constraints:
-
-            * The ``geometry_type`` must not end with ``"ZM"``.  This is due to PostGIS'
-              ``AddGeometryColumn`` failing with ZM geometry types. Instead the "simple"
-              geometry type (e.g. POINT rather POINTZM) should be used with ``dimension``
-              set to ``4``.
-            * When the ``geometry_type`` ends with ``"Z"`` or ``"M"`` then ``dimension``
-              must be set to ``3``.
-
-            With ``management`` set to ``False`` (the default) ``dimension`` is not
-            taken into account, and the actual dimension is fully defined with the
-            ``geometry_type``.
-
         spatial_index: Indicate if a spatial index should be created. Default is ``True``.
         use_N_D_index: Use the N-D index instead of the standard 2-D index.
-        management: Indicate if the ``AddGeometryColumn`` and ``DropGeometryColumn``
-            managements functions should be called when adding and dropping the
-            geometry column. Should be set to ``True`` for PostGIS 1.x and SQLite. Default is
-            ``False``. Note that this option has no effect for
-            :class:`geoalchemy2.types.Geography`.
         use_typmod: By default PostgreSQL type modifiers are used to create the geometry
             column. To use check constraints instead set ``use_typmod`` to
             ``False``. By default this option is not included in the call to
-            ``AddGeometryColumn``. Note that this option is only taken
-            into account if ``management`` is set to ``True`` and is only available
-            for PostGIS 2.x.
+            ``AddGeometryColumn``. Note that this option is only available for PostGIS 2.x.
     """
 
-    name = None
+    name: Optional[str] = None
     """ Name used for defining the main geo type (geometry or geography)
         in CREATE TABLE statements. Set in subclasses. """
 
-    from_text = None
+    from_text: Optional[str] = None
     """ The name of "from text" function for this type.
         Set in subclasses. """
 
-    as_binary = None
+    as_binary: Optional[str] = None
     """ The name of the "as binary" function for this type.
         Set in subclasses. """
 
-    comparator_factory = Comparator
+    comparator_factory: Any = Comparator
     """ This is the way by which spatial operators are defined for
         geometry/geography columns. """
 
@@ -131,15 +119,14 @@ class _GISType(UserDefinedType):
         dimension=2,
         spatial_index=True,
         use_N_D_index=False,
-        management=False,
         use_typmod=None,
         from_text=None,
         name=None,
         nullable=True,
         _spatial_index_reflected=None,
-    ):
+    ) -> None:
         geometry_type, srid = self.check_ctor_args(
-            geometry_type, srid, dimension, management, use_typmod, nullable
+            geometry_type, srid, dimension, use_typmod, nullable
         )
         self.geometry_type = geometry_type
         self.srid = srid
@@ -150,15 +137,8 @@ class _GISType(UserDefinedType):
         self.dimension = dimension
         self.spatial_index = spatial_index
         self.use_N_D_index = use_N_D_index
-        if management:
-            warnings.warn(
-                "The 'management' parameter is going to be deprecated and will raise an error in "
-                "the version 0.14",
-                PendingDeprecationWarning,
-            )
-        self.management = management
         self.use_typmod = use_typmod
-        self.extended = self.as_binary == "ST_AsEWKB"
+        self.extended: Optional[bool] = self.as_binary == "ST_AsEWKB"
         self.nullable = nullable
         self._spatial_index_reflected = _spatial_index_reflected
 
@@ -198,36 +178,16 @@ class _GISType(UserDefinedType):
         return process
 
     @staticmethod
-    def check_ctor_args(geometry_type, srid, dimension, management, use_typmod, nullable):
+    def check_ctor_args(geometry_type, srid, dimension, use_typmod, nullable):
         try:
             srid = int(srid)
         except ValueError:
             raise ArgumentError("srid must be convertible to an integer")
         if geometry_type:
             geometry_type = geometry_type.upper()
-            if management:
-                if geometry_type.endswith("ZM"):
-                    # PostGIS' AddGeometryColumn does not work with ZM geometry types. Instead
-                    # the simple geometry type (e.g. POINT rather POINTZM) should be used with
-                    # dimension set to 4
-                    raise ArgumentError(
-                        "with management=True use geometry_type={!r} and "
-                        "dimension=4 for {!r} geometries".format(geometry_type[:-2], geometry_type)
-                    )
-                elif geometry_type[-1] in ("Z", "M") and dimension != 3:
-                    # If a Z or M geometry type is used then dimension must be set to 3
-                    raise ArgumentError(
-                        "with management=True dimension must be 3 for "
-                        "{!r} geometries".format(geometry_type)
-                    )
-        else:
-            if management:
-                raise ArgumentError("geometry_type set to None not compatible with management")
-            if srid > 0:
-                warnings.warn("srid not enforced when geometry_type is None")
+        elif srid > 0:
+            warnings.warn("srid not enforced when geometry_type is None")
 
-        if use_typmod and not management:
-            warnings.warn("use_typmod ignored when management is False")
         if use_typmod is not None and not nullable:
             raise ArgumentError(
                 'The "nullable" and "use_typmod" arguments can not be used together'
@@ -355,7 +315,7 @@ class Raster(_GISType):
     cache_ok = False
     """ Disable cache for this type. """
 
-    def __init__(self, spatial_index=True, from_text=None, name=None, nullable=True):
+    def __init__(self, spatial_index=True, from_text=None, name=None, nullable=True) -> None:
         # Enforce default values
         super(Raster, self).__init__(
             geometry_type=None,
@@ -363,7 +323,6 @@ class Raster(_GISType):
             dimension=2,
             spatial_index=spatial_index,
             use_N_D_index=False,
-            management=False,
             use_typmod=False,
             from_text=from_text,
             name=name,
@@ -380,7 +339,7 @@ class _DummyGeometry(Geometry):
     """A dummy type only used with SQLite."""
 
     def get_col_spec(self):
-        return "GEOMETRY"
+        return self.geometry_type or "GEOMETRY"
 
 
 class CompositeType(UserDefinedType):
@@ -393,7 +352,7 @@ class CompositeType(UserDefinedType):
     This is used as the base class of :class:`geoalchemy2.types.GeometryDump`.
     """
 
-    typemap = {}
+    typemap: Dict[str, _TypeEngineArgument] = {}
     """ Dictionary used for defining the content types and their
         corresponding keys. Set in subclasses. """
 

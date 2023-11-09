@@ -40,7 +40,7 @@ class SummaryStatsCustomType(CompositeType):
 
 
 class ST_SummaryStatsAgg(GenericFunction):
-    type = SummaryStatsCustomType
+    type = SummaryStatsCustomType()
     # Set a specific identifier to not override the actual ST_SummaryStatsAgg function
     identifier = "ST_SummaryStatsAgg_custom"
 
@@ -51,7 +51,7 @@ metadata = MetaData()
 Base = declarative_base(metadata=metadata)
 
 
-class Ocean(Base):
+class Ocean(Base):  # type: ignore
     __tablename__ = "ocean"
     id = Column(Integer, primary_key=True)
     rast = Column(Raster)

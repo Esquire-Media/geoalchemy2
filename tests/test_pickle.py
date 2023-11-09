@@ -12,7 +12,7 @@ metadata = MetaData()
 Base = declarative_base(metadata=metadata)
 
 
-class PickledLake(Base):
+class PickledLake(Base):  # type: ignore
     __tablename__ = "pickled_lake"
     id = Column(Integer, primary_key=True)
     geom = Column(Geometry(geometry_type="LINESTRING", srid=4326))
@@ -43,7 +43,7 @@ class TestPickle:
 
         lake_id = setup_one_lake
 
-        lake = session.query(PickledLake).get(lake_id)
+        lake = session.get(PickledLake, lake_id)
         assert isinstance(lake.geom, WKBElement)
         data_desc = str(lake.geom)
 

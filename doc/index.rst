@@ -13,6 +13,7 @@ GeoAlchemy 2 also supports the following dialects:
 * `SpatiaLite <https://www.gaia-gis.it/fossil/libspatialite/home>`_ >= 4.3.0 (except for alembic
   helpers that require SpatiaLite >= 5)
 * `MySQL <https://dev.mysql.com/doc/refman/8.0/en/spatial-types.html>`_ >= 8
+* `MariaDB <https://mariadb.com/kb/en/gis-features-in-533/>`_ >= 5.3.3 (experimental)
 * `GeoPackage <http://www.geopackage.org/spec/>`_
 
 Note that using GeoAlchemy 2 with these dialects may require some specific configuration on the
@@ -150,6 +151,14 @@ Contributors:
 Many thanks to Mike Bayer for his guidance and support! He also `fostered
 <https://groups.google.com/forum/?fromgroups=#!topic/geoalchemy/k3PmQOB_FX4>`_
 the birth of GeoAlchemy 2.
+
+Citation
+--------
+
+When you use this software, we kindly ask you to cite the following DOI:
+
+.. image:: https://zenodo.org/badge/5638538.svg
+  :target: https://zenodo.org/doi/10.5281/zenodo.10808783
 
 
 Indices and tables

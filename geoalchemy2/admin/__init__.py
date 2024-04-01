@@ -20,6 +20,7 @@ def select_dialect(dialect_name):
         "geopackage": dialects.geopackage,
         "mssql": dialects.mssql,
         "mysql": dialects.mysql,
+        "mariadb": dialects.mysql,
         "postgresql": dialects.postgresql,
         "sqlite": dialects.sqlite,
     }
